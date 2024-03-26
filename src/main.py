@@ -40,6 +40,13 @@ if (not (
     print("woke up at the wrong time, sleeping")
     if not DEV: machine.deepsleep(seconds_until_next_hour * 1000)
 
+current_time = time.localtime()
+seconds_until_next_hour = 3600 - (current_time[4] * 60 + current_time[5])
+if seconds_until_next_hour < 60:
+    if not DEV: time.sleep(seconds_until_next_hour)
+    
+if not DEV: time.sleep(10)
+
 # get the electricity price data
 response = urequests.get(f'http://homeapi.antti.codes/electricity_prices?key={API_KEY}')
 price_data = response.json()
