@@ -16,11 +16,14 @@ def connect_to_wlan():
         wlan.connect(WLAN_SSID, WLAN_PASS)
         while not wlan.isconnected():
             pass
-        print("network:", wlan.ifconfig())
+    print("network:", wlan.ifconfig())
 
 # connect to wifi and sync time
 connect_to_wlan()
+print("time before sync:", time.localtime())
+ntptime.host = "fi.pool.ntp.org"
 ntptime.settime()
+print("time after sync:", time.localtime())
 
 reset_cause = machine.reset_cause()
 wake_reason = machine.wake_reason()
@@ -64,7 +67,7 @@ text_writer48.printstring(str(round(price_data["today"]["now"]["price"],1)))
 
 next_three_hours = list(filter(lambda entry: entry["time"] > price_data["today"]["now"]["time"], list(reversed(price_data["today"]["prices"])) + list(reversed(price_data["tomorrow"]["prices"] or []))))[:3]
 over100 = len(list(filter(lambda x: x, map(lambda x: x["price"] > 100, next_three_hours)))) + (price_data["today"]["now"]["price"] > 100)
-under10 = len(list(filter(lambda x: x, map(lambda x: x["price"] < 10, next_three_hours)))) + (price_data["today"]["now"]["price"] < 10)
+under10 = len(list(filter(lambda x: x, map(lambda x: 0 <= x["price"] < 10, next_three_hours)))) + (0 <=price_data["today"]["now"]["price"] < 10)
 
 if over100 >= 1: next_three_hours = next_three_hours[:2]
 
@@ -83,6 +86,8 @@ if price_data["tomorrow"]["prices"] is not None:
     prices = prices[12:]
     prices += list(reversed(price_data["tomorrow"]["prices"]))[:12]
 max_price = max(map(lambda x: x["price"], prices))
+min_price = min(map(lambda x: x["price"], prices))
+if min_price > 0: min_price = 0
 
 labels = (
     "12 13 14 15 16 17 18 19 20 21 22 23 0   1   2    3   4    5   6   7   8   9  10 11"
@@ -95,8 +100,26 @@ text_writer10.printstring(labels)
 
 x = 0
 for (i, entry) in enumerate(prices):
-    height = int(entry["price"] / max_price * 100)
-    fb.rect(x, 52 + (100 - height), 15 - (i % 3 == 0), height, epd.RED if entry["time"] == price_data["today"]["now"]["time"] else epd.YELLOW, True)
+    if entry["price"] >= 0:
+        height = int(entry["price"] / max_price * (100 * (max_price / (max_price - min_price))))
+        fb.rect(
+            x,
+            52 + int(100 * (max_price / (max_price - min_price)) - height),
+            15 - (i % 3 == 0),
+            height,
+            epd.RED if entry["time"] == price_data["today"]["now"]["time"] else epd.YELLOW,
+            True
+        )
+    else:
+        height = int(entry["price"] / min_price * (100 * (min_price / (min_price - max_price))))
+        fb.rect(
+            x,
+            52 + int(100 * (max_price / (max_price - min_price))),
+            15 - (i % 3 == 0),
+            height,
+            epd.RED if entry["time"] == price_data["today"]["now"]["time"] else epd.YELLOW,
+            True
+        )
     x += 15 + (1 if i % 3 == 0 else 2)
 
 # display the updated frame and go back to sleep

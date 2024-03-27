@@ -7,6 +7,7 @@
     },
     "micropico.syncFolder": "",
     "micropico.openOnStart": false,
+    "micropico.autoConnect": false,
     "python.analysis.typeshedPaths": [".vscode/Pico-W-Stub"],
     "python.analysis.extraPaths": [".vscode/Pico-W-Stub"]
 }
