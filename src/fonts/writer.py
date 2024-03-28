@@ -55,7 +55,9 @@ class Writer():
                 raise ValueError('row is out of range')
             s.text_row = row
         if col is not None:
-            if col < 0 or col >= device.width:
+            # i just want to write to negative columns ok
+            # if col < 0 or col >= device.width:
+            if col >= device.width:
                 raise ValueError('col is out of range')
             s.text_col = col
         return s.text_row,  s.text_col
