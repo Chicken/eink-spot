@@ -11,7 +11,6 @@ WHITE = const(0b01)
 YELLOW = const(0b10)
 RED = const(0b11)
 
-# TODO: should there be a power pin?
 RST_PIN = const(19) # reset, low active
 DC_PIN = const(0) # high = data, low = data
 CS_PIN = const(5) # spi chip select, low active 
