@@ -1,4 +1,4 @@
-from time import sleep_ms
+from time import sleep_ms, ticks_ms, ticks_diff
 from machine import Pin, SPI
 from micropython import const
 import framebuf
@@ -71,8 +71,11 @@ class EPD3in0g:
         self.CS.value(1) # deactive spi
         
     def wait_for_idle(self):
+        start = ticks_ms()
         while(self.BUSY.value() == 0): # low = busy, high = idle
             sleep_ms(20)
+            if ticks_diff(ticks_ms(), start) > 2 * 60 * 1000:
+                raise Exception("wait for idle timeout")
 
     def refresh_display(self):
         self.send_command(DATA_REFRESH, 0x00) # magic numbers

@@ -4,18 +4,21 @@ import time
 import ntptime
 import urequests
 
-from src.env import DEV
+from src.env import DEV, ERROR_WEBHOOK
 from src.epd3in0g import EPD3in0g
 from src.fonts import opensans48bold, opensans28, opensans10
 from src.fonts.writer import CWriter
+from src.data import Log, RestartCounter
 
 def connect_to_wlan(ssid, passwd):
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    start = time.ticks_ms()
     if not wlan.isconnected():
         wlan.connect(ssid, passwd)
         while not wlan.isconnected():
-            pass
+            if time.ticks_diff(time.ticks_ms(), start) > 60 * 1000:
+                raise Exception("network connection timeout")
     print("network:", wlan.ifconfig())
 
 def app(db):
@@ -154,6 +157,20 @@ def app(db):
     epd.init()
     epd.display(epd.get_buffer(buf))
     epd.sleep()
+
+    try:
+        rc = RestartCounter()
+        c = rc.get()
+        rc.reset()
+    
+        log = Log()
+        log_content = log.read(2000).strip()
+        if len(log_content) > 0:
+            urequests.post(ERROR_WEBHOOK, json={"content": f"recovered after {c} crashes"})
+            urequests.post(ERROR_WEBHOOK, json={"content": f"{log_content}"})
+            log.clear()
+    except:
+        pass
 
     # sleep till the next full hour
     current_time = time.localtime()
